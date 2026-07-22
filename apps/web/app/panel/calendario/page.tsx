@@ -22,12 +22,21 @@ export default async function CalendarioPage() {
     take: 50,
   });
 
-  const byDay = appointments.reduce<Record<string, typeof appointments>>((acc, a) => {
-    const key = a.scheduledAt.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
-    (acc[key] ??= []).push(a);
-    return acc;
-  }, {});
+  const byDay: Record<string, typeof appointments> = {};
 
+for (const a of appointments) {
+  const key = a.scheduledAt.toLocaleDateString("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  if (!byDay[key]) {
+    byDay[key] = [];
+  }
+
+  byDay[key].push(a);
+}
   return (
     <>
       <h1 className="mb-1 font-display text-2xl font-black">Calendario</h1>
