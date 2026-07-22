@@ -1,0 +1,536 @@
+// ============================================================
+// Nexora Labs — Modelo de datos completo
+// Fase 1 de 9 · packages/database/schema.prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  ADMIN
+  TECHNICIAN
+  CLIENT
+}
+
+enum DeviceType {
+  LAPTOP
+  DESKTOP
+  SMARTPHONE
+  TABLET
+  SMART_TV
+  MONITOR
+  GPU
+  MOTHERBOARD
+  CONSOLE_XBOX
+  CONSOLE_PLAYSTATION
+  CONSOLE_NINTENDO
+  PRINTER
+  OTHER
+}
+
+enum ServiceCategory {
+  HARDWARE_REPAIR
+  DATA_RECOVERY
+  CLEANING
+  COMPONENT_UPGRADE
+  OPTIMIZATION
+  SOFTWARE_DEVELOPMENT
+  EMBEDDED_SYSTEMS
+  CONSULTING
+}
+enum PaymentStatus {
+  PENDING   // Esperando pago
+  PAID      // Pago aprobado
+  REFUNDED  // Dinero devuelto al cliente
+  WAIVED    // Cobro exonerado por el taller
+  VOID      // Factura o cobro anulado antes del pago
+}
+
+enum RepairStatus {
+  RECEIVED // Recibido
+  DIAGNOSIS // Diagnóstico
+  AWAITING_PARTS // Repuestos
+  IN_REPAIR // Reparación
+  TESTING // Pruebas
+  COMPLETED // Finalizado
+  DELIVERED
+  CANCELLED
+}
+
+enum RepairPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  WOMPI
+  BANK_TRANSFER
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum NotificationType {
+  TICKET_STATUS_CHANGED
+  APPOINTMENT_REMINDER
+  INVOICE_ISSUED
+  CHAT_MESSAGE
+  SYSTEM
+}
+
+// ============================================================
+// AUTENTICACIÓN (Auth.js / NextAuth v5)
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  role          Role      @default(CLIENT)
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  clientProfile     ClientProfile?
+  technicianProfile TechnicianProfile?
+
+  sentMessages    ChatMessage[]     @relation("MessageSender")
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  uploadedPhotos  Attachment[]
+  statusChangesBy RepairStatusHistory[]
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// UBICACIONES (preparado para multi-sede)
+// ============================================================
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  city      String
+  phone     String?
+  createdAt DateTime @default(now())
+
+  technicians     TechnicianProfile[]
+  repairTickets   RepairTicket[]
+  inventoryItems  InventoryItem[]
+  appointments    Appointment[]
+}
+
+// ============================================================
+// PERFILES
+// ============================================================
+
+model ClientProfile {
+  id      String  @id @default(cuid())
+  userId  String  @unique
+  address String?
+  city    String?
+  company String?
+  taxId   String?
+
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devices          Device[]
+  repairTickets    RepairTicket[]
+  appointments     Appointment[]
+  invoices         Invoice[]
+  conversations    Conversation[]
+  orders           Order[]
+}
+
+model TechnicianProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  locationId  String?
+  specialties ServiceCategory[]
+
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location         Location?       @relation(fields: [locationId], references: [id])
+  assignedTickets  RepairTicket[]
+  appointments     Appointment[]
+  conversations    Conversation[]
+}
+
+// ============================================================
+// DISPOSITIVOS Y REPARACIONES
+// ============================================================
+
+model Device {
+  id           String     @id @default(cuid())
+  clientId     String
+  type         DeviceType
+  brand        String
+  model        String?
+  serialNumber String?
+  notes        String?
+  createdAt    DateTime   @default(now())
+
+  client        ClientProfile   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  repairTickets RepairTicket[]
+}
+
+model RepairTicket {
+  id                 String          @id @default(cuid())
+  code               String          @unique // ej. NL-2026-00045
+  trackingCode       String              @unique // Público: NX-7FK2P9QX8L4M
+  clientId           String
+  deviceId           String
+  technicianId       String?
+  locationId         String?
+  category           ServiceCategory
+
+
+
+
+  status        RepairStatus    @default(RECEIVED)
+  paymentStatus PaymentStatus   @default(PENDING)
+  priority      RepairPriority  @default(NORMAL)
+
+  problemDescription String          @db.Text
+  diagnosis          String?         @db.Text
+  estimatedCost      Decimal?        @db.Decimal(10, 2)
+  finalCost          Decimal?        @db.Decimal(10, 2)
+  laborCost     Decimal? @db.Decimal(10, 2) // Mano de obra
+  partsCost     Decimal? @db.Decimal(10, 2) // Repuestos
+  discount       Decimal? @db.Decimal(10, 2) @default(0) // Descuento
+  tax            Decimal? @db.Decimal(10, 2) @default(0) // Impuestos (opcional)
+  warrantyMonths     Int             @default(3)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  completedAt        DateTime?
+
+  client       ClientProfile       @relation(fields: [clientId], references: [id])
+  device       Device              @relation(fields: [deviceId], references: [id])
+  technician   TechnicianProfile?  @relation(fields: [technicianId], references: [id])
+  location     Location?           @relation(fields: [locationId], references: [id])
+
+  statusHistory RepairStatusHistory[]
+  parts         RepairPart[]
+  attachments   Attachment[]
+  invoice       Invoice?
+  warranty      Warranty?
+  conversation  Conversation?
+
+  @@index([status])
+  @@index([clientId])
+}
+
+model RepairStatusHistory {
+  id          String       @id @default(cuid())
+  ticketId    String
+  status      RepairStatus
+  note        String?
+  changedById String
+  createdAt   DateTime     @default(now())
+
+  ticket    RepairTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  changedBy User         @relation(fields: [changedById], references: [id])
+
+  @@index([ticketId])
+}
+
+model Warranty {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  startDate DateTime @default(now())
+  endDate   DateTime
+  terms     String?  @db.Text
+  isActive  Boolean  @default(true)
+
+  ticket RepairTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// INVENTARIO
+// ============================================================
+
+model InventoryItem {
+  id          String   @id @default(cuid())
+  sku         String   @unique
+  name        String
+  category    String
+  quantity    Int      @default(0)
+  minStock    Int      @default(1)
+  unitCost    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  locationId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  location     Location?    @relation(fields: [locationId], references: [id])
+  usedInTickets RepairPart[]
+
+  @@index([category])
+}
+
+model RepairPart {
+  id              String  @id @default(cuid())
+  ticketId        String
+  inventoryItemId String
+  quantity        Int     @default(1)
+  unitPrice       Decimal @db.Decimal(10, 2)
+
+  ticket        RepairTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+}
+
+// ============================================================
+// FACTURACIÓN Y PAGOS
+// ============================================================
+
+model Invoice {
+  id        String        @id @default(cuid())
+  number    String        @unique
+  ticketId  String?       @unique
+  orderId   String?       @unique
+  clientId  String
+  status    InvoiceStatus @default(DRAFT)
+  subtotal  Decimal       @db.Decimal(10, 2)
+  tax       Decimal       @db.Decimal(10, 2) @default(0)
+  total     Decimal       @db.Decimal(10, 2)
+  dueDate   DateTime?
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  ticket   RepairTicket? @relation(fields: [ticketId], references: [id])
+  order    Order?        @relation(fields: [orderId], references: [id])
+  client   ClientProfile @relation(fields: [clientId], references: [id])
+  payments Payment[]
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  invoiceId String
+  amount    Decimal       @db.Decimal(10, 2)
+  method    PaymentMethod
+  reference String?
+  paidAt    DateTime      @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// RESERVAS
+// ============================================================
+
+model Appointment {
+  id              String            @id @default(cuid())
+  clientId        String
+  locationId      String?
+  technicianId    String?
+  serviceCategory ServiceCategory
+  scheduledAt     DateTime
+  status          AppointmentStatus @default(PENDING)
+  notes           String?
+  createdAt       DateTime          @default(now())
+
+  client     ClientProfile      @relation(fields: [clientId], references: [id])
+  location   Location?          @relation(fields: [locationId], references: [id])
+  technician TechnicianProfile? @relation(fields: [technicianId], references: [id])
+
+  @@index([scheduledAt])
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+
+model Conversation {
+  id           String   @id @default(cuid())
+  clientId     String
+  technicianId String?
+  ticketId     String?  @unique
+  createdAt    DateTime @default(now())
+
+  client     ClientProfile      @relation(fields: [clientId], references: [id])
+  technician TechnicianProfile? @relation(fields: [technicianId], references: [id])
+  ticket     RepairTicket?      @relation(fields: [ticketId], references: [id])
+  messages   ChatMessage[]
+}
+
+model ChatMessage {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String    @db.Text
+  attachmentUrl  String?
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User          @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+}
+
+// ============================================================
+// ARCHIVOS ADJUNTOS (fotos de reparación, etc.)
+// ============================================================
+
+model Attachment {
+  id           String   @id @default(cuid())
+  ticketId     String?
+  url          String
+  type         String // "photo" | "document"
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  ticket     RepairTicket? @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User          @relation(fields: [uploadedById], references: [id])
+}
+
+// ============================================================
+// E-COMMERCE (activación en Fase 9 — modelo ya listo)
+// ============================================================
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  category    String
+  images      String[]
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  clientId  String
+  status    OrderStatus @default(PENDING)
+  total     Decimal     @db.Decimal(10, 2)
+  createdAt DateTime    @default(now())
+
+  client  ClientProfile @relation(fields: [clientId], references: [id])
+  items   OrderItem[]
+  invoice Invoice?
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int     @default(1)
+  unitPrice Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+// ============================================================
+// SISTEMA
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean           @default(false)
+  createdAt DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}

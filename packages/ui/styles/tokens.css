@@ -1,0 +1,68 @@
+/**
+ * Nexora Labs — Design tokens
+ * packages/ui/styles/tokens.css
+ *
+ * Convención: valores RGB sin función `rgb()` para poder controlar
+ * la opacidad desde Tailwind con rgb(var(--token) / <alpha-value>)
+ */
+
+:root {
+  /* Superficie */
+  --color-bg: 0 0 0;
+  --color-surface: 255 255 255;
+  --color-border: 255 255 255;
+
+  /* Texto */
+  --color-text: 255 255 255;
+  --color-text-muted: 163 163 173;
+
+  /* Acento — usar SIEMPRE con moderación (bordes, glow, gradientes puntuales) */
+  --color-purple: 138 92 255;
+  --color-blue: 62 130 250;
+  --color-cyan: 34 211 238;
+
+  /* Semántico (estados de reparación / feedback) */
+  --color-success: 74 222 128;
+  --color-warning: 250 204 21;
+  --color-danger: 248 113 113;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-full: 999px;
+
+  --blur-glass: 20px;
+  --blur-glass-strong: 28px;
+}
+
+.light,
+[data-theme="light"] {
+  --color-bg: 250 250 251;
+  --color-surface: 10 10 12;
+  --color-border: 10 10 12;
+  --color-text: 10 10 12;
+  --color-text-muted: 90 90 100;
+}
+
+/* Utilidades de cristal reutilizables fuera de Tailwind (para casos con backdrop-filter complejo) */
+.glass {
+  background: rgb(var(--color-surface) / 0.05);
+  border: 1px solid rgb(var(--color-border) / 0.1);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+.glass-strong {
+  background: rgb(var(--color-surface) / 0.08);
+  border: 1px solid rgb(var(--color-border) / 0.14);
+  backdrop-filter: blur(var(--blur-glass-strong));
+  -webkit-backdrop-filter: blur(var(--blur-glass-strong));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

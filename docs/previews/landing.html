@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora Labs — Laboratorio Tecnológico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,900,500&display=swap" rel="stylesheet">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+  :root {
+    --bg: 0 0 0;
+    --surface: 255 255 255;
+    --border: 255 255 255;
+    --text: 255 255 255;
+    --text-muted: 163 163 173;
+    --purple: 138 92 255;
+    --blue: 62 130 250;
+    --cyan: 34 211 238;
+  }
+  html.light {
+    --bg: 250 250 251;
+    --surface: 10 10 12;
+    --border: 10 10 12;
+    --text: 10 10 12;
+    --text-muted: 90 90 100;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: auto; }
+  body {
+    background: rgb(var(--bg));
+    color: rgb(var(--text));
+    font-family: 'Inter', sans-serif;
+    transition: background .5s ease, color .5s ease;
+    overflow-x: hidden;
+  }
+  .font-display { font-family: 'Satoshi', 'Inter', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+  img, canvas { display: block; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---------- Ambient layers ---------- */
+  .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .45; }
+  .aurora span { position: absolute; border-radius: 999px; filter: blur(100px); animation: drift 24s ease-in-out infinite alternate; }
+  .aurora span:nth-child(1){ width:40vw; height:40vw; background: rgb(var(--purple)/.3); top:-10%; left:-8%; }
+  .aurora span:nth-child(2){ width:34vw; height:34vw; background: rgb(var(--blue)/.28); top:30%; right:-10%; animation-delay:-8s; }
+  .aurora span:nth-child(3){ width:30vw; height:30vw; background: rgb(var(--cyan)/.22); bottom:-14%; left:35%; animation-delay:-16s; }
+  @keyframes drift { from{ transform: translate(0,0) scale(1);} to{ transform: translate(5%,7%) scale(1.15);} }
+
+  .noise { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .035; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  #mouse-glow { position: fixed; top:0; left:0; width:600px; height:600px; border-radius:50%; pointer-events:none; z-index:2;
+    background: radial-gradient(circle, rgb(var(--cyan)/.10), transparent 70%);
+    transform: translate(-300px,-300px); mix-blend-mode: screen; transition: opacity .3s ease; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora span { animation: none !important; }
+    #mouse-glow { display: none; }
+  }
+
+  /* ---------- Glass utilities ---------- */
+  .glass { background: rgb(var(--surface)/.05); border: 1px solid rgb(var(--border)/.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .glass-strong { background: rgb(var(--surface)/.08); border: 1px solid rgb(var(--border)/.14); backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px); }
+
+  .scan { position: relative; overflow: hidden; }
+  .scan::before { content:''; position:absolute; top:0; left:-30%; width:30%; height:100%;
+    background: linear-gradient(90deg, transparent, rgb(var(--cyan)/.5), transparent);
+    transform: skewX(-20deg); transition: left .9s cubic-bezier(.2,.7,.2,1); }
+  .scan:hover::before { left: 130%; }
+
+  button:focus-visible, a:focus-visible { outline: 2px solid rgb(var(--cyan)); outline-offset: 3px; border-radius: 8px; }
+
+  /* ---------- Nav ---------- */
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 40; display:flex; align-items:center; justify-content:space-between;
+    padding: 1.1rem 2.5rem; }
+  .nav-links { display:flex; gap:2rem; font-size:.85rem; color: rgb(var(--text-muted)); }
+  .nav-links a:hover { color: rgb(var(--text)); }
+  .nav-actions { display:flex; align-items:center; gap:1rem; }
+  #theme-toggle { width:2.25rem; height:2.25rem; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:.7rem; cursor:pointer; color: rgb(var(--text-muted)); }
+
+  /* ---------- Hero ---------- */
+  #hero { position: relative; height: 100vh; min-height: 640px; display:flex; align-items:center; overflow:hidden; }
+  #hero-canvas { position:absolute; inset:0; z-index:0; opacity:0; transition: opacity 1.2s ease; }
+  .hero-content { position:relative; z-index:5; padding: 0 2.5rem; max-width: 780px; }
+  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:.72rem; letter-spacing:.2em; color: rgb(var(--cyan)); margin-bottom:1.5rem; }
+  .hero-title { font-family:'Satoshi','Inter',sans-serif; font-weight:900; line-height:.95; font-size: clamp(3rem, 8vw, 6.5rem); }
+  .hero-title span { display:block; overflow:hidden; }
+  .hero-sub { margin-top: 1.75rem; font-size: clamp(1rem, 1.6vw, 1.25rem); color: rgb(var(--text-muted)); max-width: 34ch; }
+  .hero-actions { margin-top: 2.5rem; display:flex; gap:1rem; flex-wrap:wrap; }
+  .btn { position:relative; overflow:hidden; font-family:'Satoshi','Inter',sans-serif; font-weight:500; padding: 1rem 1.85rem; border-radius:999px; font-size:.92rem; cursor:pointer; border:none; transition: transform .15s ease; will-change: transform; }
+  .btn-primary { background: rgb(var(--text)); color: rgb(var(--bg)); }
+  .btn-primary:hover { opacity:.92; }
+  .btn-glass { color: rgb(var(--text)); }
+  .scroll-cue { position:absolute; bottom:2.5rem; left:2.5rem; z-index:5; font-family:'JetBrains Mono',monospace; font-size:.7rem; color: rgb(var(--text-muted)); display:flex; align-items:center; gap:.6rem; }
+  .scroll-cue::before { content:''; width:1px; height:28px; background: rgb(var(--text-muted)/.5); }
+
+  /* ---------- Sections ---------- */
+  section { position: relative; z-index: 5; padding: 8rem 2.5rem; max-width: 1180px; margin: 0 auto; }
+  .section-label { font-family:'JetBrains Mono',monospace; font-size:.72rem; letter-spacing:.2em; color: rgb(var(--text-muted)); margin-bottom: 1rem; }
+  .section-title { font-family:'Satoshi','Inter',sans-serif; font-weight:900; font-size: clamp(2rem, 4vw, 3rem); max-width: 20ch; margin-bottom: 3.5rem; }
+
+  .reveal { opacity: 0; }
+
+  /* Service cards */
+  .services-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+  .service-card { border-radius: 1.5rem; padding: 2rem; transition: transform .35s ease; }
+  .service-card:hover { transform: translateY(-6px); }
+  .service-icon { width: 2.75rem; height: 2.75rem; border-radius: 1rem; margin-bottom: 1.5rem; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+  .service-card h3 { font-family:'Satoshi','Inter',sans-serif; font-weight:700; font-size:1.15rem; margin-bottom:.6rem; }
+  .service-card p { font-size:.9rem; color: rgb(var(--text-muted)); line-height:1.5; margin-bottom:1.1rem; }
+  .tag-row { display:flex; flex-wrap:wrap; gap:.4rem; }
+  .tag { font-family:'JetBrains Mono',monospace; font-size:.68rem; padding:.3rem .6rem; border-radius:999px; background: rgb(var(--surface)/.06); color: rgb(var(--text-muted)); }
+
+  /* Programming constellation */
+  .chip-field { display:flex; flex-wrap:wrap; gap: .9rem; }
+  .chip { font-family:'Satoshi','Inter',sans-serif; font-weight:500; font-size:.95rem; padding: .8rem 1.4rem; border-radius:999px; transition: transform .25s ease, border-color .25s ease; }
+  .chip:hover { transform: translateY(-3px) scale(1.03); border-color: rgb(var(--cyan)/.4) !important; }
+
+  /* Repair capabilities */
+  .repair-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1px; border-radius:1.5rem; overflow:hidden; }
+  .repair-item { padding: 1.75rem; display:flex; align-items:flex-start; gap:1rem; }
+  .repair-item .dot { width:6px; height:6px; border-radius:999px; background: rgb(var(--cyan)); margin-top:.5rem; flex-shrink:0; }
+  .repair-item h4 { font-family:'Satoshi','Inter',sans-serif; font-weight:700; font-size:1rem; margin-bottom:.35rem; }
+  .repair-item p { font-size: .85rem; color: rgb(var(--text-muted)); }
+
+  /* CTA */
+  .cta { text-align:center; padding: 9rem 2.5rem; }
+  .cta h2 { font-family:'Satoshi','Inter',sans-serif; font-weight:900; font-size: clamp(2.2rem,5vw,3.8rem); max-width: 16ch; margin: 0 auto 2.5rem; }
+
+  footer { border-top: 1px solid rgb(var(--border)/.1); padding: 3rem 2.5rem; display:flex; justify-content:space-between; align-items:center; font-size:.8rem; color: rgb(var(--text-muted)); position:relative; z-index:5; flex-wrap:wrap; gap:1rem; }
+
+  @media (max-width: 720px) {
+    nav { padding: 1rem 1.25rem; }
+    .nav-links { display:none; }
+    section { padding: 5rem 1.25rem; }
+    .hero-content { padding: 0 1.25rem; }
+    .scroll-cue { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora"><span></span><span></span><span></span></div>
+<div class="noise"></div>
+<div id="mouse-glow"></div>
+
+<nav class="glass" style="border-radius:0; border-top:none; border-left:none; border-right:none;">
+  <div class="font-display font-black" style="font-size:1rem; letter-spacing:.02em;">NEXORA <span style="color: rgb(var(--cyan))">LABS</span></div>
+  <div class="nav-links">
+    <a href="#servicios">Servicios</a>
+    <a href="#desarrollo">Desarrollo</a>
+    <a href="#reparaciones">Reparaciones</a>
+  </div>
+  <div class="nav-actions">
+    <button id="theme-toggle" class="glass">◐</button>
+    <button class="btn btn-primary" style="padding:.65rem 1.3rem; font-size:.8rem;">Solicitar reparación</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero" style="padding:0; max-width:none;">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <p class="eyebrow">LABORATORIO TECNOLÓGICO — BOGOTÁ</p>
+    <h1 class="hero-title">
+      <span data-line>Creamos.</span>
+      <span data-line>Reparamos.</span>
+      <span data-line>Innovamos.</span>
+    </h1>
+    <p class="hero-sub">Hardware. Software. Electrónica. Desarrollo. Ingeniería de precisión para cada dispositivo y cada línea de código.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary">Solicitar reparación</button>
+      <button class="btn btn-glass glass scan">Ver servicios</button>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL</div>
+</section>
+
+<!-- SERVICIOS -->
+<section id="servicios">
+  <p class="section-label reveal">01 · SERVICIOS</p>
+  <h2 class="section-title reveal">Cada categoría, tratada como su propia disciplina de ingeniería.</h2>
+  <div class="services-grid">
+    <div class="service-card glass scan reveal">
+      <div class="service-icon" style="background: rgb(var(--purple)/.15); color: rgb(var(--purple));">◆</div>
+      <h3>Equipos</h3>
+      <p>Diagnóstico y reparación de computadores, portátiles, celulares y tablets.</p>
+      <div class="tag-row"><span class="tag">Computadores</span><span class="tag">Portátiles</span><span class="tag">Celulares</span><span class="tag">Tablets</span></div>
+    </div>
+    <div class="service-card glass scan reveal">
+      <div class="service-icon" style="background: rgb(var(--blue)/.15); color: rgb(var(--blue));">▣</div>
+      <h3>Pantallas y periféricos</h3>
+      <p>Smart TVs, monitores e impresoras — diagnóstico presencial obligatorio.</p>
+      <div class="tag-row"><span class="tag">Smart TV</span><span class="tag">Monitores</span><span class="tag">Impresoras</span></div>
+    </div>
+    <div class="service-card glass scan reveal">
+      <div class="service-icon" style="background: rgb(var(--cyan)/.15); color: rgb(var(--cyan));">⬡</div>
+      <h3>Componentes a nivel de placa</h3>
+      <p>Tarjetas gráficas y placas madre — microsoldadura y diagnóstico avanzado.</p>
+      <div class="tag-row"><span class="tag">GPU</span><span class="tag">Placas madre</span></div>
+    </div>
+    <div class="service-card glass scan reveal">
+      <div class="service-icon" style="background: rgb(var(--purple)/.15); color: rgb(var(--purple));">▲</div>
+      <h3>Consolas</h3>
+      <p>Xbox, PlayStation y Nintendo — reparación y mantenimiento especializado.</p>
+      <div class="tag-row"><span class="tag">Xbox</span><span class="tag">PlayStation</span><span class="tag">Nintendo</span></div>
+    </div>
+    <div class="service-card glass scan reveal">
+      <div class="service-icon" style="background: rgb(var(--blue)/.15); color: rgb(var(--blue));">●</div>
+      <h3>Datos y mantenimiento</h3>
+      <p>Recuperación de datos, limpieza profesional y optimización de rendimiento.</p>
+      <div class="tag-row"><span class="tag">Recuperación</span><span class="tag">Limpieza</span><span class="tag">Optimización</span></div>
+    </div>
+    <div class="service-card glass scan reveal">
+      <div class="service-icon" style="background: rgb(var(--cyan)/.15); color: rgb(var(--cyan));">◈</div>
+      <h3>Upgrade de componentes</h3>
+      <p>Cambio de componentes para extender la vida útil o mejorar el rendimiento.</p>
+      <div class="tag-row"><span class="tag">Cambio de partes</span><span class="tag">Actualización</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- DESARROLLO -->
+<section id="desarrollo">
+  <p class="section-label reveal">02 · DESARROLLO</p>
+  <h2 class="section-title reveal">También construimos el software que corre en el hardware que reparamos.</h2>
+  <div class="chip-field">
+    <span class="chip glass reveal">Lua</span>
+    <span class="chip glass reveal">C</span>
+    <span class="chip glass reveal">C++</span>
+    <span class="chip glass reveal">Python</span>
+    <span class="chip glass reveal">Desarrollo Web</span>
+    <span class="chip glass reveal">Desarrollo Desktop</span>
+    <span class="chip glass reveal">Motores de videojuegos</span>
+    <span class="chip glass reveal">Automatización</span>
+    <span class="chip glass reveal">ESP32</span>
+    <span class="chip glass reveal">Arduino</span>
+    <span class="chip glass reveal">Backend</span>
+    <span class="chip glass reveal">Frontend</span>
+    <span class="chip glass reveal">Bases de datos</span>
+    <span class="chip glass reveal">APIs</span>
+  </div>
+</section>
+
+<!-- REPARACIONES -->
+<section id="reparaciones">
+  <p class="section-label reveal">03 · CAPACIDADES TÉCNICAS</p>
+  <h2 class="section-title reveal">De la sospecha inicial a la garantía por escrito.</h2>
+  <div class="repair-list glass-strong">
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Diagnóstico</h4><p>Evaluación técnica presencial antes de cualquier intervención.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Mantenimiento</h4><p>Limpieza y revisión preventiva para extender la vida útil.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Cambio de componentes</h4><p>Reemplazo con repuestos verificados y garantizados.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Microsoldadura</h4><p>Reparación a nivel de placa para fallas que otros descartan.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Recuperación de datos</h4><p>Rescate de información en discos y dispositivos dañados.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Optimización</h4><p>Ajuste de software y hardware para máximo rendimiento.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Actualización</h4><p>Upgrade de componentes cuando la reparación no basta.</p></div></div>
+    <div class="repair-item reveal"><span class="dot"></span><div><h4>Garantías</h4><p>Cada intervención queda respaldada por escrito.</p></div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <p class="section-label reveal" style="justify-content:center; display:flex;">¿EMPEZAMOS?</p>
+  <h2 class="reveal">Trae el problema. Nosotros traemos la precisión.</h2>
+  <div class="hero-actions reveal" style="justify-content:center;">
+    <button class="btn btn-primary">Solicitar reparación</button>
+    <button class="btn btn-glass glass scan">Agendar diagnóstico</button>
+  </div>
+</section>
+
+<footer>
+  <span class="font-display font-black">NEXORA LABS</span>
+  <span class="font-mono">© 2026 · Bogotá, Colombia</span>
+</footer>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+
+<script>
+  // ---------- Theme toggle ----------
+  const root = document.documentElement;
+  const toggle = document.getElementById('theme-toggle');
+  if (window.matchMedia('(prefers-color-scheme: light)').matches) root.classList.add('light');
+  toggle.addEventListener('click', () => root.classList.toggle('light'));
+
+  // ---------- Mouse glow ----------
+  const glow = document.getElementById('mouse-glow');
+  window.addEventListener('mousemove', (e) => {
+    glow.style.transform = `translate(${e.clientX - 300}px, ${e.clientY - 300}px)`;
+  });
+
+  // ---------- Magnetic buttons ----------
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const r = btn.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width / 2;
+      const y = e.clientY - r.top - r.height / 2;
+      btn.style.transform = `translate(${x * 0.2}px, ${y * 0.35}px)`;
+    });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = 'translate(0,0)'; });
+  });
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Lenis smooth scroll + GSAP ScrollTrigger ----------
+  gsap.registerPlugin(ScrollTrigger);
+  if (!reducedMotion) {
+    const lenis = new Lenis({ duration: 1.1, smoothWheel: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+  }
+
+  // Hero text reveal
+  gsap.from('[data-line]', {
+    yPercent: 110, duration: 1, ease: 'power3.out', stagger: 0.12, delay: 0.3
+  });
+  gsap.from('.eyebrow, .hero-sub, .hero-actions', {
+    opacity: 0, y: 20, duration: 0.9, ease: 'power2.out', stagger: 0.1, delay: 0.5
+  });
+
+  // Scroll reveals
+  gsap.utils.toArray('.reveal').forEach((el) => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 88%' }
+    });
+    gsap.set(el, { y: 24 });
+  });
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+  const canvas = document.getElementById('hero-canvas');
+  const hero = document.getElementById('hero');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, hero.clientWidth / hero.clientHeight, 0.1, 100);
+  camera.position.set(0, 0, 6);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(hero.clientWidth, hero.clientHeight);
+
+  // ---- Core object: glass icosahedron + wireframe shell ----
+  const core = new THREE.Group();
+
+  const solidGeo = new THREE.IcosahedronGeometry(1.35, 1);
+  const solidMat = new THREE.MeshPhysicalMaterial({
+    color: 0x8a5cff, transparent: true, opacity: 0.28,
+    metalness: 0.1, roughness: 0.2, emissive: 0x3e82fa, emissiveIntensity: 0.12,
+    side: THREE.DoubleSide,
+  });
+  const solid = new THREE.Mesh(solidGeo, solidMat);
+  core.add(solid);
+
+  const edges = new THREE.EdgesGeometry(solidGeo);
+  const lineMat = new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.5 });
+  core.add(new THREE.LineSegments(edges, lineMat));
+
+  // ---- Orbiting rings ----
+  function makeRing(radius, tube, color, rotX, rotZ) {
+    const geo = new THREE.TorusGeometry(radius, tube, 8, 96);
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35 });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.rotation.x = rotX;
+    ring.rotation.z = rotZ;
+    return ring;
+  }
+  const ring1 = makeRing(2.1, 0.006, 0x8a5cff, Math.PI / 2.4, 0.3);
+  const ring2 = makeRing(2.5, 0.004, 0x22d3ee, Math.PI / 3.2, -0.5);
+  core.add(ring1, ring2);
+  scene.add(core);
+
+  // ---- Particles ----
+  const particleCount = 900;
+  const positions = new Float32Array(particleCount * 3);
+  for (let i = 0; i < particleCount; i++) {
+    const r = 4 + Math.random() * 5;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    positions[i * 3 + 2] = r * Math.cos(phi);
+  }
+  const particleGeo = new THREE.BufferGeometry();
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const particleMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+  const particles = new THREE.Points(particleGeo, particleMat);
+  scene.add(particles);
+
+  // ---- Lights ----
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+  const rim = new THREE.DirectionalLight(0x3e82fa, 0.6);
+  rim.position.set(-4, 2, -3);
+  scene.add(rim);
+  const mouseLight = new THREE.PointLight(0x22d3ee, 2.2, 12);
+  mouseLight.position.set(0, 0, 3);
+  scene.add(mouseLight);
+
+  // ---- Bloom ----
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(hero.clientWidth, hero.clientHeight), 0.85, 0.4, 0.15);
+  composer.addPass(bloom);
+
+  // ---- Mouse interaction ----
+  let mouseX = 0, mouseY = 0, targetRotX = 0, targetRotY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+    targetRotY = mouseX * 0.5;
+    targetRotX = mouseY * 0.3;
+  });
+
+  function resize() {
+    const w = hero.clientWidth, h = hero.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    composer.setSize(w, h);
+  }
+  window.addEventListener('resize', resize);
+
+  function animate() {
+    if (!reducedMotion) requestAnimationFrame(animate);
+
+    core.rotation.y += 0.0018;
+    core.rotation.x += (targetRotX - core.rotation.x) * 0.04;
+    ring1.rotation.z += 0.003;
+    ring2.rotation.z -= 0.0022;
+    particles.rotation.y += 0.0004;
+
+    const hue = (mouseX + 1) / 2;
+    const colorLerp = new THREE.Color(0x8a5cff).lerp(new THREE.Color(0x22d3ee), hue);
+    mouseLight.color = colorLerp;
+    mouseLight.position.x += (mouseX * 3 - mouseLight.position.x) * 0.05;
+    mouseLight.position.y += (-mouseY * 2 - mouseLight.position.y) * 0.05;
+
+    composer.render();
+  }
+
+  canvas.style.opacity = '1';
+  animate();
+  if (reducedMotion) composer.render();
+</script>
+
+</body>
+</html>

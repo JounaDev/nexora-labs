@@ -1,0 +1,70 @@
+/* apps/web/app/globals.css */
+@import "../../../packages/ui/styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-bg text-text;
+  font-family: "Inter", sans-serif;
+}
+
+.font-display {
+  font-family: "Satoshi", "Inter", sans-serif;
+}
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Aurora ambiental reutilizada en marketing (Fase 3) */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.45;
+}
+.aurora span {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(100px);
+  animation: drift 24s ease-in-out infinite alternate;
+}
+.aurora span:nth-child(1) {
+  width: 40vw;
+  height: 40vw;
+  background: rgb(var(--color-purple) / 0.3);
+  top: -10%;
+  left: -8%;
+}
+.aurora span:nth-child(2) {
+  width: 34vw;
+  height: 34vw;
+  background: rgb(var(--color-blue) / 0.28);
+  top: 30%;
+  right: -10%;
+  animation-delay: -8s;
+}
+.aurora span:nth-child(3) {
+  width: 30vw;
+  height: 30vw;
+  background: rgb(var(--color-cyan) / 0.22);
+  bottom: -14%;
+  left: 35%;
+  animation-delay: -16s;
+}
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(5%, 7%) scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora span {
+    animation: none !important;
+  }
+}

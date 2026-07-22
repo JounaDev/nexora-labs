@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora Labs — Tienda</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,900,500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:0 0 0; --surface:255 255 255; --border:255 255 255; --text:255 255 255; --text-muted:163 163 173; --purple:138 92 255; --blue:62 130 250; --cyan:34 211 238; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background: rgb(var(--bg)); color: rgb(var(--text)); font-family:'Inter',sans-serif; padding: 3rem 2rem; }
+  .font-display { font-family:'Satoshi',sans-serif; }
+  .font-mono { font-family:'JetBrains Mono',monospace; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:.72rem; letter-spacing:.2em; color: rgb(var(--cyan)); margin-bottom:.6rem; }
+  h1 { font-family:'Satoshi',sans-serif; font-weight:900; font-size: clamp(1.8rem,4vw,2.6rem); max-width: 22ch; margin-bottom: 2.5rem; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:1.25rem; }
+  .card { border-radius:1.25rem; overflow:hidden; background: rgb(var(--surface)/.05); border:1px solid rgb(var(--border)/.1); backdrop-filter: blur(20px); position:relative; transition: transform .3s ease; }
+  .card:hover { transform: translateY(-4px); }
+  .thumb { aspect-ratio:1; background: linear-gradient(135deg, rgb(var(--purple)/.25), rgb(var(--blue)/.2), rgb(var(--cyan)/.2)); display:flex; align-items:center; justify-content:center; font-size:2rem; }
+  .info { padding:1.1rem; }
+  .info h3 { font-family:'Satoshi',sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.3rem; }
+  .price { font-family:'JetBrains Mono',monospace; color: rgb(var(--cyan)); font-size:.85rem; margin-bottom:.8rem; }
+  .add-btn { width:100%; padding:.55rem; border-radius:999px; border:none; background: rgb(var(--surface)/.08); color: rgb(var(--text-muted)); font-size:.75rem; cursor:pointer; }
+  .add-btn:hover { background: rgb(var(--cyan)/.15); color: rgb(var(--cyan)); }
+
+  .cart-btn { position:fixed; bottom:1.5rem; right:1.5rem; height:3.5rem; padding:0 1.3rem; border-radius:999px; background: rgb(var(--surface)/.08); border:1px solid rgb(var(--border)/.1); backdrop-filter: blur(20px); display:flex; align-items:center; gap:.5rem; color: rgb(var(--text)); cursor:pointer; }
+  .cart-count { font-family:'JetBrains Mono',monospace; color: rgb(var(--cyan)); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">TIENDA</p>
+  <h1>Hardware verificado por el mismo equipo que lo repara.</h1>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="cart-btn" id="cart-btn">🛍️ <span class="cart-count" id="cart-count">0</span></div>
+
+<script>
+  const PRODUCTS = [
+    { name: 'RAM DDR4 16GB', price: 280000, icon: '▣' },
+    { name: 'SSD NVMe 1TB', price: 420000, icon: '◆' },
+    { name: 'Fuente 650W 80+', price: 350000, icon: '⬡' },
+    { name: 'Control Xbox (Refurb)', price: 190000, icon: '●' },
+    { name: 'Cargador USB-C 65W', price: 95000, icon: '▲' },
+    { name: 'Kit destornilladores', price: 65000, icon: '◈' },
+  ];
+
+  const grid = document.getElementById('grid');
+  const cartCount = document.getElementById('cart-count');
+  let count = 0;
+
+  PRODUCTS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="thumb">${p.icon}</div>
+      <div class="info">
+        <h3>${p.name}</h3>
+        <p class="price">$${p.price.toLocaleString('es-CO')}</p>
+        <button class="add-btn">Agregar al carrito</button>
+      </div>`;
+    card.querySelector('.add-btn').addEventListener('click', () => { count++; cartCount.textContent = count; });
+    grid.appendChild(card);
+  });
+
+  document.getElementById('cart-btn').addEventListener('click', () => {
+    alert('En producción esto abre el carrito con checkout por WhatsApp — ver cart-drawer.tsx');
+  });
+</script>
+</body>
+</html>

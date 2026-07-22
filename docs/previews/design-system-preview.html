@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora Labs — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,900,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: 0 0 0;
+    --surface: 255 255 255;
+    --border: 255 255 255;
+    --text: 255 255 255;
+    --text-muted: 163 163 173;
+    --purple: 138 92 255;
+    --blue: 62 130 250;
+    --cyan: 34 211 238;
+  }
+  html.light {
+    --bg: 250 250 251;
+    --surface: 10 10 12;
+    --border: 10 10 12;
+    --text: 10 10 12;
+    --text-muted: 90 90 100;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: rgb(var(--bg));
+    color: rgb(var(--text));
+    font-family: 'Inter', sans-serif;
+    transition: background .4s ease, color .4s ease;
+    overflow-x: hidden;
+  }
+  .font-display { font-family: 'Satoshi', 'Inter', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Aurora ambient background */
+  .aurora {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .5;
+  }
+  .aurora span {
+    position: absolute; border-radius: 999px; filter: blur(90px);
+    animation: drift 22s ease-in-out infinite alternate;
+  }
+  .aurora span:nth-child(1){ width:36vw; height:36vw; background: rgb(var(--purple)/.35); top:-8%; left:-6%; }
+  .aurora span:nth-child(2){ width:30vw; height:30vw; background: rgb(var(--blue)/.3); top:20%; right:-8%; animation-delay: -6s; }
+  .aurora span:nth-child(3){ width:26vw; height:26vw; background: rgb(var(--cyan)/.25); bottom:-10%; left:30%; animation-delay: -12s; }
+  @keyframes drift { from{ transform: translate(0,0) scale(1);} to{ transform: translate(4%, 6%) scale(1.15);} }
+
+  /* Noise texture overlay */
+  .noise {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .035; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .surface { background: rgb(var(--surface)/.05); border: 1px solid rgb(var(--border)/.1); backdrop-filter: blur(20px); }
+  .surface-strong { background: rgb(var(--surface)/.08); border: 1px solid rgb(var(--border)/.14); backdrop-filter: blur(24px); }
+
+  /* Scan pulse — signature element */
+  .scan-border { position: relative; overflow: hidden; }
+  .scan-border::before {
+    content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgb(var(--cyan)/.5), transparent);
+    transform: skewX(-20deg); transition: left .9s cubic-bezier(.2,.7,.2,1);
+  }
+  .scan-border:hover::before { left: 130%; }
+
+  .pulse-dot { position: relative; }
+  .pulse-dot::after {
+    content:''; position:absolute; inset:-4px; border-radius:999px;
+    border: 1px solid currentColor; opacity: .6;
+    animation: pulse-ring 2s cubic-bezier(.4,0,.6,1) infinite;
+  }
+  @keyframes pulse-ring { 0%{ transform:scale(.8); opacity:.7;} 100%{ transform:scale(1.8); opacity:0;} }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora span, .scan-border::before, .pulse-dot::after { animation: none !important; transition: none !important; }
+  }
+
+  button:focus-visible, a:focus-visible { outline: 2px solid rgb(var(--cyan)); outline-offset: 3px; border-radius: 8px; }
+
+  .magnetic-btn { transition: transform .15s ease; will-change: transform; }
+</style>
+</head>
+<body>
+
+<div class="aurora"><span></span><span></span><span></span></div>
+<div class="noise"></div>
+
+<main class="relative z-10 max-w-5xl mx-auto px-6 py-16" style="font-family:'Inter',sans-serif;">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-20">
+    <div class="font-display font-black text-lg tracking-tight">NEXORA <span style="color: rgb(var(--cyan))">LABS</span></div>
+    <button id="theme-toggle" class="surface px-4 py-2 rounded-full text-xs font-mono" style="color: rgb(var(--text-muted))">
+      MODO: <span id="theme-label">OSCURO</span>
+    </button>
+  </header>
+
+  <!-- Intro -->
+  <section class="mb-24">
+    <p class="font-mono text-xs tracking-widest mb-4" style="color: rgb(var(--cyan))">FASE 2 — SISTEMA DE DISEÑO</p>
+    <h1 class="font-display font-black leading-[0.95] mb-6" style="font-size: clamp(2.5rem, 6vw, 4.5rem)">
+      Laboratorio,<br>no taller.
+    </h1>
+    <p class="max-w-lg" style="color: rgb(var(--text-muted))">
+      Cada token de este sistema — color, tipografía, cristal, movimiento — está calibrado para que la plataforma se sienta como ingeniería de precisión, no como una plantilla.
+    </p>
+  </section>
+
+  <!-- Colors -->
+  <section class="mb-24">
+    <h2 class="font-mono text-xs tracking-widest mb-6" style="color: rgb(var(--text-muted))">01 · PALETA</h2>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="surface rounded-2xl p-4">
+        <div class="h-16 rounded-xl mb-3" style="background:#000; border:1px solid rgb(var(--border)/.15)"></div>
+        <p class="font-mono text-xs">#000000</p>
+        <p class="text-xs" style="color: rgb(var(--text-muted))">Negro profundo</p>
+      </div>
+      <div class="surface rounded-2xl p-4">
+        <div class="h-16 rounded-xl mb-3" style="background: rgb(var(--purple))"></div>
+        <p class="font-mono text-xs">#8A5CFF</p>
+        <p class="text-xs" style="color: rgb(var(--text-muted))">Morado eléctrico</p>
+      </div>
+      <div class="surface rounded-2xl p-4">
+        <div class="h-16 rounded-xl mb-3" style="background: rgb(var(--blue))"></div>
+        <p class="font-mono text-xs">#3E82FA</p>
+        <p class="text-xs" style="color: rgb(var(--text-muted))">Azul eléctrico</p>
+      </div>
+      <div class="surface rounded-2xl p-4">
+        <div class="h-16 rounded-xl mb-3" style="background: rgb(var(--cyan))"></div>
+        <p class="font-mono text-xs">#22D3EE</p>
+        <p class="text-xs" style="color: rgb(var(--text-muted))">Cyan</p>
+      </div>
+      <div class="surface rounded-2xl p-4">
+        <div class="h-16 rounded-xl mb-3" style="background: linear-gradient(135deg, rgb(var(--purple)), rgb(var(--blue)), rgb(var(--cyan)))"></div>
+        <p class="font-mono text-xs">gradient</p>
+        <p class="text-xs" style="color: rgb(var(--text-muted))">Solo en detalles</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Typography -->
+  <section class="mb-24">
+    <h2 class="font-mono text-xs tracking-widest mb-6" style="color: rgb(var(--text-muted))">02 · TIPOGRAFÍA</h2>
+    <div class="surface rounded-2xl p-8 space-y-6">
+      <div>
+        <p class="font-display font-black" style="font-size: 3rem; line-height:1">Satoshi — Display</p>
+        <p class="text-xs font-mono mt-1" style="color: rgb(var(--text-muted))">Titulares, cifras de impacto, peso 900/700</p>
+      </div>
+      <div>
+        <p style="font-size: 1.25rem">Inter — Cuerpo de texto, para lectura larga y UI</p>
+        <p class="text-xs font-mono mt-1" style="color: rgb(var(--text-muted))">Peso 400/500/600</p>
+      </div>
+      <div>
+        <p class="font-mono" style="font-size: 1.1rem">JetBrains Mono — NL-2026-00045</p>
+        <p class="text-xs font-mono mt-1" style="color: rgb(var(--text-muted))">Códigos de ticket, datos, cifras técnicas</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Buttons -->
+  <section class="mb-24">
+    <h2 class="font-mono text-xs tracking-widest mb-6" style="color: rgb(var(--text-muted))">03 · BOTONES (magnéticos)</h2>
+    <div class="flex flex-wrap gap-4">
+      <button class="magnetic-btn font-display font-medium px-7 py-3.5 rounded-full" style="background: rgb(var(--text)); color: rgb(var(--bg))">
+        Solicitar reparación
+      </button>
+      <button class="magnetic-btn surface-strong font-display font-medium px-7 py-3.5 rounded-full scan-border">
+        Ver servicios
+      </button>
+      <button class="magnetic-btn font-display font-medium px-7 py-3.5 rounded-full" style="border:1px solid rgb(var(--border)/.2); color: rgb(var(--text-muted))">
+        Consultoría
+      </button>
+    </div>
+    <p class="text-xs mt-4" style="color: rgb(var(--text-muted))">Mueve el cursor cerca de un botón — reacciona magnéticamente. Pasa el cursor sobre "Ver servicios" para ver el scan pulse.</p>
+  </section>
+
+  <!-- Glass cards -->
+  <section class="mb-24">
+    <h2 class="font-mono text-xs tracking-widest mb-6" style="color: rgb(var(--text-muted))">04 · TARJETAS DE CRISTAL</h2>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="scan-border surface rounded-3xl p-6 transition-transform hover:-translate-y-1" style="transition: transform .3s ease">
+        <div class="w-10 h-10 rounded-xl mb-4" style="background: rgb(var(--purple)/.18); border:1px solid rgb(var(--purple)/.3)"></div>
+        <p class="font-display font-bold mb-1">Diagnóstico</p>
+        <p class="text-sm" style="color: rgb(var(--text-muted))">Evaluación técnica presencial antes de cualquier intervención.</p>
+      </div>
+      <div class="scan-border surface rounded-3xl p-6 transition-transform hover:-translate-y-1" style="transition: transform .3s ease">
+        <div class="w-10 h-10 rounded-xl mb-4" style="background: rgb(var(--blue)/.18); border:1px solid rgb(var(--blue)/.3)"></div>
+        <p class="font-display font-bold mb-1">Microsoldadura</p>
+        <p class="text-sm" style="color: rgb(var(--text-muted))">Reparación de componentes a nivel de placa.</p>
+      </div>
+      <div class="scan-border surface rounded-3xl p-6 transition-transform hover:-translate-y-1" style="transition: transform .3s ease">
+        <div class="w-10 h-10 rounded-xl mb-4" style="background: rgb(var(--cyan)/.18); border:1px solid rgb(var(--cyan)/.3)"></div>
+        <p class="font-display font-bold mb-1">Desarrollo</p>
+        <p class="text-sm" style="color: rgb(var(--text-muted))">Software, automatización, ESP32 y sistemas a medida.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Status badges -->
+  <section class="mb-16">
+    <h2 class="font-mono text-xs tracking-widest mb-6" style="color: rgb(var(--text-muted))">05 · ESTADOS DE REPARACIÓN</h2>
+    <div class="surface rounded-2xl p-6 flex flex-wrap gap-3 font-mono text-xs">
+      <span class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background: rgb(var(--text-muted)/.12)">
+        <span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background: rgb(var(--text-muted)); color: rgb(var(--text-muted))"></span> RECIBIDO
+      </span>
+      <span class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background: rgb(var(--blue)/.15); color: rgb(var(--blue))">
+        <span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background: rgb(var(--blue))"></span> DIAGNÓSTICO
+      </span>
+      <span class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background: rgb(var(--purple)/.15); color: rgb(var(--purple))">
+        <span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background: rgb(var(--purple))"></span> EN REPARACIÓN
+      </span>
+      <span class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background: rgb(var(--cyan)/.15); color: rgb(var(--cyan))">
+        <span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background: rgb(var(--cyan))"></span> PRUEBAS
+      </span>
+      <span class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background:#22c55e26; color:#4ade80">
+        <span class="w-1.5 h-1.5 rounded-full" style="background:#4ade80"></span> FINALIZADO
+      </span>
+    </div>
+  </section>
+
+  <footer class="text-xs pt-8" style="color: rgb(var(--text-muted)); border-top: 1px solid rgb(var(--border)/.1)">
+    Elemento de firma: <strong style="color: rgb(var(--text))">Scan Pulse</strong> — el barrido de luz que cruza cristales y botones evoca el escaneo de un diagnóstico técnico. Los puntos de estado laten como un monitor de laboratorio. Es el hilo visual que conecta cada pantalla con la idea de "laboratorio tecnológico".
+  </footer>
+
+</main>
+
+<script>
+  const root = document.documentElement;
+  const toggle = document.getElementById('theme-toggle');
+  const label = document.getElementById('theme-label');
+  const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  if (prefersLight) { root.classList.add('light'); label.textContent = 'CLARO'; }
+
+  toggle.addEventListener('click', () => {
+    root.classList.toggle('light');
+    label.textContent = root.classList.contains('light') ? 'CLARO' : 'OSCURO';
+  });
+
+  // Magnetic buttons
+  document.querySelectorAll('.magnetic-btn').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const r = btn.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width / 2;
+      const y = e.clientY - r.top - r.height / 2;
+      btn.style.transform = `translate(${x * 0.25}px, ${y * 0.4}px)`;
+    });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = 'translate(0,0)'; });
+  });
+</script>
+
+</body>
+</html>

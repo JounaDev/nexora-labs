@@ -1,0 +1,27 @@
+{
+  "name": "@nexora/database",
+  "private": true,
+  "version": "0.0.0",
+  "exports": {
+    ".": "./client.ts",
+    "./client": "./client.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio",
+    "seed": "tsx seed.ts"
+  },
+  "prisma": {
+    "schema": "schema.prisma",
+    "seed": "tsx seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.20.0",
+    "tsx": "^4.19.1",
+    "bcryptjs": "^2.4.3"
+  }
+}
