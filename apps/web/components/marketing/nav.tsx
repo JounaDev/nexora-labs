@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { ThemeToggle } from "@nexora/ui/components";
-
+import { MobileMenu } from "@/components/common/MobileMenu";
 export function Nav() {
   return (
     <nav className="glass fixed inset-x-0 top-0 z-40 flex items-center justify-between border-x-0 border-t-0 px-6 py-4 sm:px-10">
@@ -21,6 +21,7 @@ export function Nav() {
       </div>
 
       <div className="flex items-center gap-3">
+          <MobileMenu />
         <ThemeToggle />
         <Link href="/reservar" className="rounded-full bg-text px-4 py-2 text-xs font-medium text-bg">
           Solicitar reparación
